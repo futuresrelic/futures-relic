@@ -1,0 +1,38 @@
+export async function POST(request) {
+  // Mock blends data
+  const mockBlends = [
+    {
+      blend_id: "1",
+      collection_name: "futuresrelic",
+      is_active: true,
+      start_time: 1640000000,
+      end_time: 1950000000,
+      max: 100,
+      use_count: 25,
+      ingredients: [
+        {
+          collection_name: "futuresrelic",
+          template_id: "607289",
+          amount: 2,
+          effect: { type: "typed_attribute" }
+        },
+        {
+          collection_name: "futuresrelic",
+          template_id: "607290",
+          amount: 1,
+          effect: { type: "typed_attribute" }
+        }
+      ],
+      display_data: JSON.stringify({
+        name: "Mysterious Convergence",
+        description: "Combine ancient relics to unlock new mysteries",
+        category: "Chapter 1"
+      })
+    }
+  ];
+
+  return new Response(JSON.stringify(mockBlends), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}

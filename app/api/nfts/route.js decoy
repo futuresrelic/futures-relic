@@ -1,0 +1,45 @@
+export async function GET(request) {
+  // Mock data with placeholder images
+  const mockData = {
+    success: true,
+    data: [
+      {
+        asset_id: "1099511627776",
+        template_id: "607289",
+        schema_name: "relics",
+        name: "Ancient Relic #1",
+        img: "",
+        collection: {
+          collection_name: "futuresrelic",
+          name: "Future's Relic",
+          img: ""
+        },
+        data: {
+          rarity: "Rare",
+          era: "1920s"
+        }
+      },
+      {
+        asset_id: "1099511627777",
+        template_id: "607290",
+        schema_name: "relics",
+        name: "Ancient Relic #2",
+        img: "",
+        collection: {
+          collection_name: "futuresrelic",
+          name: "Future's Relic",
+          img: ""
+        },
+        data: {
+          rarity: "Common",
+          era: "1920s"
+        }
+      }
+    ]
+  };
+
+  return new Response(JSON.stringify(mockData), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
