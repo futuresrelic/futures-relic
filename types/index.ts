@@ -81,6 +81,7 @@ export interface StoryScene {
   unlocked: boolean;
   imageUrl?: string;
   order: number;
+  blend_id?: string; // Optional link to blend that unlocks this scene
 }
 
 export interface BlendRecommendation {

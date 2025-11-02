@@ -62,7 +62,7 @@ export async function fetchPacks(): Promise<Pack[]> {
 // Get template information
 export async function fetchTemplate(templateId: string): Promise<any> {
   try {
-    const response = await axios.get(`/api/template/${templateId}`);
+    const response = await axios.get(`/api/templates/${templateId}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching template:', error);
@@ -76,30 +76,47 @@ export function canCompleteBlend(
   userNFTs: NFTAsset[]
 ): { canComplete: boolean; missing: any[] } {
   const missing: any[] = [];
+  
+  // Create a pool of available NFTs (clone array so we can track usage)
+  const availableNFTs = [...userNFTs];
+  const usedNFTIds = new Set<string>();
 
   for (const ingredient of blend.ingredients) {
-    let matchingNFTs: NFTAsset[];
+    let matchingNFTs: NFTAsset[] = [];
 
     if (ingredient.template_id) {
-      matchingNFTs = userNFTs.filter(
-        nft => nft.template_id === ingredient.template_id
+      // Template-specific ingredient
+      const ingredientTemplateId = String(ingredient.template_id);
+      matchingNFTs = availableNFTs.filter(
+        nft => String(nft.template_id) === ingredientTemplateId && !usedNFTIds.has(nft.asset_id)
       );
     } else if (ingredient.schema_name) {
-      matchingNFTs = userNFTs.filter(
-        nft => nft.schema_name === ingredient.schema_name
+      // Schema-based ingredient (any NFT from this schema)
+      matchingNFTs = availableNFTs.filter(
+        nft => nft.schema_name === ingredient.schema_name && !usedNFTIds.has(nft.asset_id)
       );
-    } else {
-      matchingNFTs = userNFTs.filter(
-        nft => nft.collection.collection_name === ingredient.collection_name
+    } else if (ingredient.collection_name) {
+      // Collection-based ingredient (any NFT from collection)
+      matchingNFTs = availableNFTs.filter(
+        nft => nft.collection.collection_name === ingredient.collection_name && !usedNFTIds.has(nft.asset_id)
       );
     }
 
-    if (matchingNFTs.length < ingredient.amount) {
+    // Check if we have enough
+    const needed = ingredient.amount;
+    const owned = matchingNFTs.length;
+
+    if (owned < needed) {
       missing.push({
         ingredient,
-        owned: matchingNFTs.length,
-        needed: ingredient.amount,
+        owned,
+        needed,
       });
+    } else {
+      // Mark the first N matching NFTs as "used" so they can't be double-counted
+      for (let i = 0; i < needed; i++) {
+        usedNFTIds.add(matchingNFTs[i].asset_id);
+      }
     }
   }
 

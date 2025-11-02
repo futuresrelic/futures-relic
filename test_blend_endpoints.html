@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blend Endpoints Tester</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            background: #2a2a2a;
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+        }
+        .error {
+            border-color: #ff0000;
+            color: #ff0000;
+        }
+        .success {
+            border-color: #00ff00;
+            color: #00ff00;
+        }
+        button {
+            background: #00ff00;
+            color: #1a1a1a;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-family: monospace;
+        }
+        button:hover {
+            background: #00cc00;
+        }
+        pre {
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .endpoint {
+            color: #ffff00;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Blend Endpoints Tester for futuresrelic</h1>
+    
+    <div>
+        <button onclick="testNeftyAPI()">Test NeftyBlocks API</button>
+        <button onclick="testAAAPI()">Test aa.neftyblocks.com API</button>
+        <button onclick="testBlockchain()">Test Blockchain (blend.nefty)</button>
+        <button onclick="testBlockchainAlt()">Test Blockchain (blenderizerx)</button>
+        <button onclick="testAll()">Test All</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        const collection = 'futuresrelic';
+
+        function addResult(title, data, isError = false) {
+            const div = document.createElement('div');
+            div.className = `result ${isError ? 'error' : 'success'}`;
+            div.innerHTML = `
+                <h3>${title}</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            document.getElementById('results').appendChild(div);
+        }
+
+        async function testNeftyAPI() {
+            const endpoint = `https://api.neftyblocks.com/api/blends/${collection}`;
+            addResult('🌐 Testing NeftyBlocks API', { endpoint, status: 'Testing...' });
+            
+            try {
+                const response = await fetch(endpoint);
+                const data = await response.json();
+                addResult(`✅ NeftyBlocks API - Found ${Array.isArray(data) ? data.length : data.data?.length || 0} blends`, {
+                    endpoint,
+                    status: response.status,
+                    count: Array.isArray(data) ? data.length : data.data?.length || 0,
+                    sample: Array.isArray(data) ? data[0] : data.data?.[0]
+                }, !response.ok);
+            } catch (error) {
+                addResult('❌ NeftyBlocks API Failed', { endpoint, error: error.message }, true);
+            }
+        }
+
+        async function testAAAPI() {
+            const endpoint = `https://aa.neftyblocks.com/atomicassets/v1/blends?collection_name=${collection}&limit=1000`;
+            addResult('🌐 Testing aa.neftyblocks.com API', { endpoint, status: 'Testing...' });
+            
+            try {
+                const response = await fetch(endpoint);
+                const data = await response.json();
+                addResult(`✅ aa.neftyblocks.com - Found ${data.data?.length || 0} blends`, {
+                    endpoint,
+                    status: response.status,
+                    count: data.data?.length || 0,
+                    sample: data.data?.[0]
+                }, !response.ok || !data.data?.length);
+            } catch (error) {
+                addResult('❌ aa.neftyblocks.com Failed', { endpoint, error: error.message }, true);
+            }
+        }
+
+        async function testBlockchain() {
+            const endpoint = 'https://wax.greymass.com/v1/chain/get_table_rows';
+            addResult('⛓️ Testing Blockchain (blend.nefty)', { endpoint, status: 'Testing...' });
+            
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        json: true,
+                        code: 'blend.nefty',
+                        scope: 'blend.nefty',
+                        table: 'blends',
+                        limit: 1000,
+                        index_position: 2,
+                        key_type: 'i64',
+                        lower_bound: collection,
+                        upper_bound: collection,
+                    })
+                });
+                const data = await response.json();
+                const filtered = data.rows?.filter(b => b.collection_name === collection) || [];
+                addResult(`✅ Blockchain (blend.nefty) - Found ${filtered.length} blends`, {
+                    endpoint,
+                    contract: 'blend.nefty',
+                    count: filtered.length,
+                    sample: filtered[0]
+                }, !filtered.length);
+            } catch (error) {
+                addResult('❌ Blockchain (blend.nefty) Failed', { endpoint, error: error.message }, true);
+            }
+        }
+
+        async function testBlockchainAlt() {
+            const endpoint = 'https://wax.greymass.com/v1/chain/get_table_rows';
+            addResult('⛓️ Testing Blockchain (blenderizerx)', { endpoint, status: 'Testing...' });
+            
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        json: true,
+                        code: 'blenderizerx',
+                        scope: 'blenderizerx',
+                        table: 'blends',
+                        limit: 1000,
+                        index_position: 2,
+                        key_type: 'i64',
+                        lower_bound: collection,
+                        upper_bound: collection,
+                    })
+                });
+                const data = await response.json();
+                const filtered = data.rows?.filter(b => b.collection_name === collection) || [];
+                addResult(`✅ Blockchain (blenderizerx) - Found ${filtered.length} blends`, {
+                    endpoint,
+                    contract: 'blenderizerx',
+                    count: filtered.length,
+                    sample: filtered[0]
+                }, !filtered.length);
+            } catch (error) {
+                addResult('❌ Blockchain (blenderizerx) Failed', { endpoint, error: error.message }, true);
+            }
+        }
+
+        async function testAll() {
+            document.getElementById('results').innerHTML = '';
+            await testNeftyAPI();
+            await testAAAPI();
+            await testBlockchain();
+            await testBlockchainAlt();
+        }
+    </script>
+</body>
+</html>

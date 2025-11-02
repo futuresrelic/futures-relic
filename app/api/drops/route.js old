@@ -8,10 +8,14 @@ export async function POST(request) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         json: true,
-        code: 'drops.nefty',
-        scope: 'drops.nefty',
+        code: 'neftyblocksd',
+        scope: 'neftyblocksd',
         table: 'drops',
         limit: 1000,
+        index_position: 2,
+        key_type: 'i64',
+        lower_bound: collection,
+        upper_bound: collection,
       }),
     });
 

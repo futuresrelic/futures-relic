@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { generateBlendRecommendations, getNextAction, parseDisplayData } from '@/lib/recommendations';
 import { OldPaperCard } from './VintageOverlay';
@@ -8,6 +8,7 @@ import type { BlendRecommendation } from '@/types';
 
 export const BlendRecommendations: React.FC = () => {
   const { blendRecipes, userNFTs, userProgress, isLoadingBlends } = useAppStore();
+  const [showCount, setShowCount] = useState(20);
 
   const recommendations = useMemo(() => {
     if (!blendRecipes.length || !userNFTs.length) return [];
@@ -67,10 +68,21 @@ export const BlendRecommendations: React.FC = () => {
         </h2>
 
         <div className="space-y-4">
-          {recommendations.slice(0, 10).map((rec) => (
+          {recommendations.slice(0, showCount).map((rec) => (
             <BlendRecommendationCard key={rec.blend.blend_id} recommendation={rec} />
           ))}
         </div>
+
+        {recommendations.length > showCount && (
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => setShowCount(prev => prev + 20)}
+              className="px-8 py-3 bg-vintage-gold text-vintage-darkBrown font-vintage font-bold text-lg hover:scale-105 transition-all border-2 border-vintage-sepia"
+            >
+              Show More Blends ({recommendations.length - showCount} remaining)
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -80,7 +92,67 @@ const BlendRecommendationCard: React.FC<{ recommendation: BlendRecommendation }>
   recommendation,
 }) => {
   const { blend, canComplete, missingIngredients, priority, reason } = recommendation;
+  const { userNFTs } = useAppStore();
   const displayData = parseDisplayData(blend.display_data);
+  const [templateNames, setTemplateNames] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+
+  // Construct correct NeftyBlocks URL with contract
+  const blendUrl = `https://neftyblocks.com/collection/futuresrelic/blends/${blend.contract || 'blend.nefty'}/${blend.blend_id}`;
+
+  // Fetch template names using server-side API
+  useEffect(() => {
+    const fetchTemplateNames = async () => {
+      const names: Record<string, string> = {};
+      const uniqueTemplateIds = new Set<string>();
+      
+      // Collect all unique template IDs
+      for (const ingredient of blend.ingredients) {
+        if (ingredient.template_id) {
+          uniqueTemplateIds.add(ingredient.template_id);
+        }
+      }
+
+      // First check user's NFTs for names (instant, no API calls)
+      for (const templateId of uniqueTemplateIds) {
+        const userNFT = userNFTs.find(nft => String(nft.template_id) === String(templateId));
+        if (userNFT) {
+          names[templateId] = userNFT.name;
+        }
+      }
+
+      // Fetch missing names from server API (with delay to avoid rate limits)
+      const missingIds = Array.from(uniqueTemplateIds).filter(id => !names[id]);
+      
+      for (let i = 0; i < missingIds.length; i++) {
+        const templateId = missingIds[i];
+        
+        // Add delay between requests to avoid rate limiting
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        try {
+          const response = await fetch(`/api/templates/${templateId}`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            names[templateId] = data.name || `Template ${templateId}`;
+          } else {
+            names[templateId] = `Template ${templateId}`;
+          }
+        } catch (error) {
+          console.error(`Failed to fetch template ${templateId}:`, error);
+          names[templateId] = `Template ${templateId}`;
+        }
+      }
+      
+      setTemplateNames(names);
+      setLoading(false);
+    };
+
+    fetchTemplateNames();
+  }, [blend.ingredients, userNFTs]);
 
   return (
     <OldPaperCard
@@ -96,11 +168,18 @@ const BlendRecommendationCard: React.FC<{ recommendation: BlendRecommendation }>
             {displayData?.name || `Blend #${blend.blend_id}`}
           </h3>
 
-          {/* Description */}
-          {displayData?.description && (
+          {/* Description - Only show if it exists and is not too long */}
+          {displayData?.description && displayData.description.length < 200 && (
             <p className="text-sm opacity-70 mb-3 italic">
               {displayData.description}
             </p>
+          )}
+
+          {/* Category */}
+          {displayData?.category && (
+            <div className="text-xs opacity-60 mb-2">
+              Category: {displayData.category}
+            </div>
           )}
 
           {/* Status/Reason */}
@@ -111,8 +190,12 @@ const BlendRecommendationCard: React.FC<{ recommendation: BlendRecommendation }>
             <div className="text-sm font-bold opacity-70">Required Ingredients:</div>
             {blend.ingredients.map((ingredient, idx) => {
               const missing = missingIngredients.find(
-                (m) => m.ingredient.template_id === ingredient.template_id
+                (m) => String(m.ingredient.template_id) === String(ingredient.template_id)
               );
+              
+              const templateName = ingredient.template_id 
+                ? (templateNames[ingredient.template_id] || (loading ? 'Loading...' : `Template ${ingredient.template_id}`))
+                : '';
 
               return (
                 <div
@@ -123,14 +206,25 @@ const BlendRecommendationCard: React.FC<{ recommendation: BlendRecommendation }>
                   `}
                 >
                   <span>{missing ? '❌' : '✅'}</span>
-                  <span>
-                    {ingredient.amount}x {ingredient.template_id ? `Template #${ingredient.template_id}` : ingredient.schema_name || 'Any NFT'}
-                  </span>
-                  {missing && (
-                    <span className="text-red-600 font-bold">
-                      (Need {missing.needed - missing.owned} more)
-                    </span>
-                  )}
+                  <div className="flex-1">
+                    <div>
+                      {ingredient.amount}x {ingredient.template_id ? (
+                        <>
+                          <span className="font-bold">{templateName}</span>
+                          <span className="opacity-60 ml-1">(#{ingredient.template_id})</span>
+                        </>
+                      ) : ingredient.schema_name ? (
+                        <span>Any from schema: {ingredient.schema_name}</span>
+                      ) : (
+                        <span>Any NFT from collection</span>
+                      )}
+                    </div>
+                    {missing && (
+                      <div className="text-red-600 font-bold text-xs">
+                        Need {missing.needed - missing.owned} more
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -148,6 +242,18 @@ const BlendRecommendationCard: React.FC<{ recommendation: BlendRecommendation }>
                 <strong>Ends:</strong> {new Date(blend.end_time * 1000).toLocaleDateString()}
               </div>
             )}
+          </div>
+
+          {/* NeftyBlocks Link */}
+          <div className="mt-4">
+            <a
+              href={blendUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-vintage-gold hover:underline"
+            >
+              View on NeftyBlocks →
+            </a>
           </div>
         </div>
 
@@ -169,7 +275,7 @@ const BlendRecommendationCard: React.FC<{ recommendation: BlendRecommendation }>
       {canComplete && (
         <div className="mt-6 pt-4 border-t-2 border-vintage-sepia">
           <a
-            href={`https://neftyblocks.com/collection/futuresrelic/blends/${blend.blend_id}`}
+            href={blendUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="
