@@ -13,6 +13,7 @@ export function StoryScenes() {
       fade: 'animate-fade-in',
       flicker: 'animate-flicker',
       slide: 'animate-slide-in',
+      none: '',
     }[scene.cinematicEffect || 'fade'];
 
     return (
@@ -30,10 +31,10 @@ export function StoryScenes() {
         </div>
 
         {/* Scene Image */}
-        {scene.image && (
+        {scene.imageUrl && (
           <div className="mb-8">
             <img
-              src={scene.image}
+              src={scene.imageUrl}
               alt={scene.title}
               className="w-full border-2 border-vintage-sepia opacity-80"
             />

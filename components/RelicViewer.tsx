@@ -14,7 +14,7 @@ export const RelicViewer: React.FC = () => {
     
     const groups = new Map<string, typeof userNFTs>();
     userNFTs.forEach(nft => {
-      const key = nft.template_id || nft.template?.template_id || 'no-template';
+      const key = nft.template_id || 'no-template';
       if (!groups.has(key)) {
         groups.set(key, []);
       }
@@ -89,7 +89,7 @@ export const RelicViewer: React.FC = () => {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-8">
         {displayNFTs.map((nft) => {
-          const templateId = nft.template_id || nft.template?.template_id || 'no-template';
+          const templateId = nft.template_id || 'no-template';
           const count = groupByTemplate && groupedNFTs 
             ? groupedNFTs.get(templateId)?.length || 1
             : 1;
@@ -171,7 +171,7 @@ export const RelicViewer: React.FC = () => {
                   <div className="flex gap-2">
                     <span className="font-bold opacity-70">Template ID:</span>
                     <span className="font-mono">
-                      {selectedNFT.template_id || selectedNFT.template?.template_id || 'N/A'}
+                      {selectedNFT.template_id || 'N/A'}
                     </span>
                   </div>
                   <div className="flex gap-2">
@@ -182,7 +182,7 @@ export const RelicViewer: React.FC = () => {
                     <div className="flex gap-2">
                       <span className="font-bold opacity-70">You own:</span>
                       <span className="font-bold text-vintage-gold">
-                        {groupedNFTs.get(selectedNFT.template_id || selectedNFT.template?.template_id || 'no-template')?.length || 1}
+                        {groupedNFTs.get(selectedNFT.template_id || 'no-template')?.length || 1}
                       </span>
                     </div>
                   )}

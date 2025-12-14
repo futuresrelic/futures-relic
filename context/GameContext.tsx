@@ -2,13 +2,13 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { waxService } from '@/services/waxService';
-import { WalletState, GameProgress, NFTAsset, StoryScene, BlendRecipe } from '@/types';
+import { WalletState, GameProgress, NFTAsset, StoryScene, StoryBlendRecipe } from '@/types';
 
 interface GameContextType {
   wallet: WalletState;
   progress: GameProgress;
   scenes: StoryScene[];
-  blendRecipes: BlendRecipe[];
+  blendRecipes: StoryBlendRecipe[];
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
   unlockScene: (sceneId: string) => void;
@@ -48,7 +48,7 @@ const initialScenes: StoryScene[] = [
 ];
 
 // Sample blend recipes
-const initialBlendRecipes: BlendRecipe[] = [
+const initialBlendRecipes: StoryBlendRecipe[] = [
   {
     id: 'blend_1',
     name: 'The Chronometer',
@@ -75,7 +75,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   });
 
   const [scenes, setScenes] = useState<StoryScene[]>(initialScenes);
-  const [blendRecipes] = useState<BlendRecipe[]>(initialBlendRecipes);
+  const [blendRecipes] = useState<StoryBlendRecipe[]>(initialBlendRecipes);
   const [isLoading, setIsLoading] = useState(false);
 
   // Load progress from localStorage
