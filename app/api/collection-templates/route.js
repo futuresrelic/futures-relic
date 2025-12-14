@@ -3,6 +3,8 @@ let templateCache = null;
 let cacheTimestamp = null;
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
