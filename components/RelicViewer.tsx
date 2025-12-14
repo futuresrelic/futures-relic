@@ -4,6 +4,35 @@ import React, { useState, useMemo } from 'react';
 import { useAppStore } from '@/lib/store';
 import { FilmFrame, OldPaperCard } from './VintageOverlay';
 
+// Helper to get template ID from various possible locations
+const getTemplateId = (nft: any): string => {
+  return nft.template_id || nft.template?.template_id || nft.data?.template_id || 'no-template';
+};
+
+// Helper to get image/video from NFT
+const getMediaUrl = (nft: any): { type: 'image' | 'video', url: string } | null => {
+  // Check for video first (priority)
+  const video = nft.data?.video || nft.video;
+  if (video) {
+    const videoUrl = video.startsWith('http') ? video : `https://ipfs.io/ipfs/${video}`;
+    return { type: 'video', url: videoUrl };
+  }
+
+  // Then check for image
+  const img = nft.img || nft.data?.img;
+  if (img) {
+    const imgUrl = img.startsWith('http') ? img : `https://ipfs.io/ipfs/${img}`;
+    return { type: 'image', url: imgUrl };
+  }
+
+  return null;
+};
+
+// Helper to get NFT name
+const getNFTName = (nft: any): string => {
+  return nft.name || nft.data?.name || 'Unknown Relic';
+};
+
 export const RelicViewer: React.FC = () => {
   const { userNFTs, isLoadingNFTs } = useAppStore();
   const [selectedRelic, setSelectedRelic] = useState<string | null>(null);
@@ -11,10 +40,10 @@ export const RelicViewer: React.FC = () => {
 
   const groupedNFTs = useMemo(() => {
     if (!groupByTemplate) return null;
-    
+
     const groups = new Map<string, typeof userNFTs>();
     userNFTs.forEach(nft => {
-      const key = nft.template_id || 'no-template';
+      const key = getTemplateId(nft);
       if (!groups.has(key)) {
         groups.set(key, []);
       }
@@ -89,10 +118,12 @@ export const RelicViewer: React.FC = () => {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-8">
         {displayNFTs.map((nft) => {
-          const templateId = nft.template_id || 'no-template';
-          const count = groupByTemplate && groupedNFTs 
+          const templateId = getTemplateId(nft);
+          const count = groupByTemplate && groupedNFTs
             ? groupedNFTs.get(templateId)?.length || 1
             : 1;
+          const media = getMediaUrl(nft);
+          const name = getNFTName(nft);
 
           return (
             <button
@@ -105,15 +136,26 @@ export const RelicViewer: React.FC = () => {
             >
               <FilmFrame className="w-full" style={{ aspectRatio: '750/1050' }}>
                 <div className="relative w-full h-full bg-vintage-sepia flex items-center justify-center">
-                  {nft.img ? (
-                    <img
-                      src={`https://ipfs.io/ipfs/${nft.img}`}
-                      alt={nft.name}
-                      className="w-full h-full object-contain"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
+                  {media ? (
+                    media.type === 'video' ? (
+                      <video
+                        src={media.url}
+                        className="w-full h-full object-contain"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                      />
+                    ) : (
+                      <img
+                        src={media.url}
+                        alt={name}
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    )
                   ) : (
                     <div className="text-6xl">🔮</div>
                   )}
@@ -128,7 +170,7 @@ export const RelicViewer: React.FC = () => {
                 </div>
               </FilmFrame>
               <div className="mt-2 text-center text-sm font-vintage text-vintage-cream truncate">
-                {nft.name}
+                {name}
               </div>
             </button>
           );
@@ -142,25 +184,42 @@ export const RelicViewer: React.FC = () => {
               <div className="md:w-1/3">
                 <FilmFrame style={{ aspectRatio: '750/1050' }}>
                   <div className="relative w-full h-full bg-vintage-sepia flex items-center justify-center">
-                    {selectedNFT.img ? (
-                      <img
-                        src={`https://ipfs.io/ipfs/${selectedNFT.img}`}
-                        alt={selectedNFT.name}
-                        className="w-full h-full object-contain"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="text-9xl">🔮</div>
-                    )}
+                    {(() => {
+                      const media = getMediaUrl(selectedNFT);
+                      if (!media) return <div className="text-9xl">🔮</div>;
+
+                      if (media.type === 'video') {
+                        return (
+                          <video
+                            src={media.url}
+                            className="w-full h-full object-contain"
+                            controls
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                          />
+                        );
+                      }
+
+                      return (
+                        <img
+                          src={media.url}
+                          alt={getNFTName(selectedNFT)}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      );
+                    })()}
                   </div>
                 </FilmFrame>
               </div>
 
               <div className="flex-1">
                 <h3 className="text-3xl font-vintage font-bold text-vintage-sepia mb-4">
-                  {selectedNFT.name}
+                  {getNFTName(selectedNFT)}
                 </h3>
 
                 <div className="space-y-3 mb-6">
@@ -171,18 +230,18 @@ export const RelicViewer: React.FC = () => {
                   <div className="flex gap-2">
                     <span className="font-bold opacity-70">Template ID:</span>
                     <span className="font-mono">
-                      {selectedNFT.template_id || 'N/A'}
+                      {getTemplateId(selectedNFT)}
                     </span>
                   </div>
                   <div className="flex gap-2">
                     <span className="font-bold opacity-70">Schema:</span>
-                    <span>{selectedNFT.schema_name}</span>
+                    <span>{selectedNFT.schema_name || 'N/A'}</span>
                   </div>
                   {groupByTemplate && groupedNFTs && (
                     <div className="flex gap-2">
                       <span className="font-bold opacity-70">You own:</span>
                       <span className="font-bold text-vintage-gold">
-                        {groupedNFTs.get(selectedNFT.template_id || 'no-template')?.length || 1}
+                        {groupedNFTs.get(getTemplateId(selectedNFT))?.length || 1}
                       </span>
                     </div>
                   )}
