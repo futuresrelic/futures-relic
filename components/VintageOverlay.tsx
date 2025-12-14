@@ -4,12 +4,13 @@ export const VintageFilmOverlay: React.FC = () => {
   return null;
 };
 
-export const FilmFrame: React.FC<{ children: React.ReactNode; className?: string }> = ({
+export const FilmFrame: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({
   children,
   className = '',
+  style,
 }) => {
   return (
-    <div className={`relative border-4 border-vintage-sepia bg-vintage-darkBrown shadow-2xl ${className}`}>
+    <div className={`relative border-4 border-vintage-sepia bg-vintage-darkBrown shadow-2xl ${className}`} style={style}>
       {children}
     </div>
   );

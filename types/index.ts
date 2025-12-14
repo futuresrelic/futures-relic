@@ -75,13 +75,14 @@ export interface Pack {
 export interface StoryScene {
   id: string;
   title: string;
-  description: string;
+  description?: string;
   content: string;
   requiredNFTs: string[]; // template IDs
   unlocked: boolean;
   imageUrl?: string;
-  order: number;
+  order?: number;
   blend_id?: string; // Optional link to blend that unlocks this scene
+  cinematicEffect?: 'fade' | 'flicker' | 'none';
 }
 
 export interface BlendRecommendation {
@@ -101,4 +102,28 @@ export interface UserProgress {
   unlockedScenes: string[];
   completedBlends: string[];
   lastUpdated: number;
+}
+
+// Story/Game specific types (different from API types)
+export interface StoryBlendRecipe {
+  id: string;
+  name: string;
+  requiredTemplates: string[];
+  resultTemplateId: string;
+  resultName: string;
+  resultImage: string;
+  description: string;
+}
+
+export interface WalletState {
+  isConnected: boolean;
+  accountName: string | null;
+  nfts: NFTAsset[];
+}
+
+export interface GameProgress {
+  unlockedScenes: string[];
+  completedBlends: string[];
+  discoveredRelics: string[];
+  currentChapter: number;
 }

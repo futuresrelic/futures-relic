@@ -22,7 +22,7 @@ interface AppState {
 
   // Story Progress
   userProgress: UserProgress | null;
-  setUserProgress: (progress: UserProgress) => void;
+  setUserProgress: (progress: UserProgress | null) => void;
   unlockScene: (sceneId: string) => void;
   completeBlend: (blendId: string) => void;
 

@@ -120,7 +120,7 @@ export default function Home() {
 }
 
 const DashboardView: React.FC = () => {
-  const { account, nfts } = useAppStore();
+  const { account, userNFTs } = useAppStore();
 
   return (
     <div className="grid md:grid-cols-2 gap-8">
@@ -131,11 +131,11 @@ const DashboardView: React.FC = () => {
         <div className="space-y-4 text-vintage-oldPaper">
           <div className="flex justify-between text-xl">
             <span>Total Relics:</span>
-            <span className="font-bold text-vintage-gold">{nfts?.length || 0}</span>
+            <span className="font-bold text-vintage-gold">{userNFTs?.length || 0}</span>
           </div>
           <div className="flex justify-between text-xl">
             <span>Wallet:</span>
-            <span className="font-mono text-sm text-vintage-gold">{account?.accountName || account}</span>
+            <span className="font-mono text-sm text-vintage-gold">{account?.accountName || 'Not connected'}</span>
           </div>
         </div>
       </FilmFrame>

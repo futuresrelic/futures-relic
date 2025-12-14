@@ -12,8 +12,8 @@ interface RelicCardProps {
 }
 
 export function RelicCard({ nft, onClick, selected }: RelicCardProps) {
-  const name = nft.data?.name || nft.immutable_data?.name || 'Unknown Relic';
-  const image = nft.data?.img || nft.immutable_data?.img || '';
+  const name = nft.name || nft.data?.name || 'Unknown Relic';
+  const image = nft.img || nft.data?.img || '';
   const rarity = nft.data?.rarity || 'common';
   
   const imageUrl = waxService.getIpfsUrl(image);

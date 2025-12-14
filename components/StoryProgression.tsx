@@ -28,7 +28,7 @@ export const StoryProgression: React.FC = () => {
     }
   }, [storyScenes.length, initialized, setStoryScenes]);
 
-  const sortedScenes = [...storyScenes].sort((a, b) => a.order - b.order);
+  const sortedScenes = [...storyScenes].sort((a, b) => (a.order || 0) - (b.order || 0));
   const isUnlocked = (sceneId: string) => userProgress?.unlockedScenes.includes(sceneId) || false;
 
   return (
