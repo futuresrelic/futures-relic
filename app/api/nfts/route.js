@@ -17,26 +17,57 @@ export async function GET(request) {
       });
     }
 
-    const url = `https://aa-wax-public1.neftyblocks.com/atomicassets/v1/assets?owner=${owner}&collection_name=${collection}&limit=${limit}`;
-    console.log('[NFT API] Fetching:', url);
+    // Try multiple API endpoints with proper headers
+    const apiEndpoints = [
+      'https://wax.api.atomicassets.io/atomicassets/v1/assets',
+      'https://aa.dapplica.io/atomicassets/v1/assets',
+      'https://aa-wax-public1.neftyblocks.com/atomicassets/v1/assets',
+    ];
 
-    const response = await fetch(url);
+    const fetchOptions = {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; FuturesRelic/1.0)',
+        'Accept': 'application/json',
+      },
+    };
 
-    if (!response.ok) {
-      throw new Error(`AtomicAssets API returned ${response.status}`);
+    let lastError = null;
+
+    // Try each endpoint until one works
+    for (const endpoint of apiEndpoints) {
+      try {
+        const url = `${endpoint}?owner=${owner}&collection_name=${collection}&limit=${limit}`;
+        console.log('[NFT API] Trying:', endpoint);
+
+        const response = await fetch(url, fetchOptions);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[NFT API] Success with:', endpoint);
+
+          return new Response(JSON.stringify(data), {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store, max-age=0',
+            },
+          });
+        } else {
+          lastError = `${endpoint} returned ${response.status}`;
+          console.warn('[NFT API] Failed:', lastError);
+        }
+      } catch (err) {
+        lastError = err.message;
+        console.warn('[NFT API] Error with', endpoint, ':', err.message);
+        continue;
+      }
     }
 
-    const data = await response.json();
+    // All endpoints failed
+    throw new Error(`All API endpoints failed. Last error: ${lastError}`);
 
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-store, max-age=0',
-      },
-    });
   } catch (error) {
-    console.error('[NFT API] Error:', error);
+    console.error('[NFT API] Fatal error:', error);
     return new Response(JSON.stringify({
       success: false,
       error: error.message,
