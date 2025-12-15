@@ -3,7 +3,14 @@ import AnchorLink from 'anchor-link';
 import AnchorLinkBrowserTransport from 'anchor-link-browser-transport';
 import type { WAXAccount } from '@/types';
 
-export type WalletType = 'wcw' | 'anchor';
+export type WalletType = 'wcw' | 'anchor' | 'wombat';
+
+// Declare Wombat wallet type
+declare global {
+  interface Window {
+    wombat?: any;
+  }
+}
 
 // WAX Cloud Wallet instance
 let wax: any = null;
@@ -107,6 +114,39 @@ export async function loginWithAnchor(): Promise<WAXAccount | null> {
   }
 }
 
+// Login with Wombat
+export async function loginWithWombat(): Promise<WAXAccount | null> {
+  try {
+    if (typeof window === 'undefined') return null;
+
+    // Check if Wombat is installed
+    if (!window.wombat) {
+      alert('Wombat Wallet is not installed. Please install it from https://getwombat.io/');
+      return null;
+    }
+
+    // Connect to Wombat
+    const result = await window.wombat.connect();
+
+    if (!result || !result.account) {
+      throw new Error('Failed to connect to Wombat wallet');
+    }
+
+    activeWallet = 'wombat';
+    localStorage.setItem('activeWallet', 'wombat');
+    localStorage.setItem('wombatAccount', result.account.name);
+
+    return {
+      accountName: result.account.name,
+      permission: result.account.authority || 'active',
+      publicKey: result.publicKey || '',
+    };
+  } catch (error) {
+    console.error('Wombat login error:', error);
+    return null;
+  }
+}
+
 // Auto-login for WAX Cloud Wallet
 async function autoLoginWCW(): Promise<WAXAccount | null> {
   try {
@@ -169,9 +209,44 @@ async function autoLoginAnchor(): Promise<WAXAccount | null> {
   }
 }
 
+// Auto-login for Wombat
+async function autoLoginWombat(): Promise<WAXAccount | null> {
+  try {
+    if (typeof window === 'undefined') return null;
+
+    const savedAccount = localStorage.getItem('wombatAccount');
+    if (!savedAccount) return null;
+
+    // Check if Wombat is installed
+    if (!window.wombat) return null;
+
+    // Try to auto-connect
+    const result = await window.wombat.connect();
+
+    if (!result || !result.account) return null;
+
+    activeWallet = 'wombat';
+
+    return {
+      accountName: result.account.name,
+      permission: result.account.authority || 'active',
+      publicKey: result.publicKey || '',
+    };
+  } catch (error) {
+    console.error('Wombat auto-login error:', error);
+    localStorage.removeItem('wombatAccount');
+    return null;
+  }
+}
+
 // Auto-login (tries last used wallet)
 export async function autoLogin(): Promise<WAXAccount | null> {
   const lastWallet = localStorage.getItem('activeWallet') as WalletType | null;
+
+  if (lastWallet === 'wombat') {
+    const result = await autoLoginWombat();
+    if (result) return result;
+  }
 
   if (lastWallet === 'anchor') {
     const result = await autoLoginAnchor();
@@ -196,6 +271,11 @@ export async function logout(): Promise<void> {
     }
     anchorSession = null;
     localStorage.removeItem('anchorSession');
+  }
+
+  if (activeWallet === 'wombat') {
+    localStorage.removeItem('wombatAccount');
+    // Wombat doesn't have an explicit logout, just clear storage
   }
 
   wax = null;

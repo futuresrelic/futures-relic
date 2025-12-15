@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAppStore } from '@/lib/store';
-import { loginWithWCW, loginWithAnchor, autoLogin, logout } from '@/lib/wallet';
+import { loginWithWCW, loginWithAnchor, loginWithWombat, autoLogin, logout } from '@/lib/wallet';
 import { fetchUserNFTs, fetchBlendRecipes, fetchDrops } from '@/lib/api';
 
 export const WalletConnect: React.FC = () => {
@@ -71,15 +71,17 @@ export const WalletConnect: React.FC = () => {
     }
   };
 
-  const handleLogin = async (walletType: 'wcw' | 'anchor') => {
+  const handleLogin = async (walletType: 'wcw' | 'anchor' | 'wombat') => {
     setIsConnecting(true);
     setShowWalletOptions(false);
 
     let acc = null;
     if (walletType === 'wcw') {
       acc = await loginWithWCW();
-    } else {
+    } else if (walletType === 'anchor') {
       acc = await loginWithAnchor();
+    } else {
+      acc = await loginWithWombat();
     }
 
     if (acc) {
@@ -162,6 +164,20 @@ export const WalletConnect: React.FC = () => {
           "
         >
           <span className="relative z-10">Anchor Wallet</span>
+        </button>
+
+        <button
+          onClick={() => handleLogin('wombat')}
+          className="
+            px-8 py-4 bg-vintage-gold text-vintage-darkBrown
+            font-vintage text-xl font-bold
+            border-4 border-vintage-sepia
+            hover:bg-vintage-cream transition-all
+            shadow-2xl transform hover:scale-105
+            relative overflow-hidden
+          "
+        >
+          <span className="relative z-10">Wombat Wallet</span>
         </button>
 
         <button
