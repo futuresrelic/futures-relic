@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAppStore } from '@/lib/store';
-import { loginWithWax, autoLogin, logout } from '@/lib/wax';
+import { loginWithWCW, loginWithAnchor, autoLogin, logout } from '@/lib/wallet';
 import { fetchUserNFTs, fetchBlendRecipes, fetchDrops } from '@/lib/api';
 
 export const WalletConnect: React.FC = () => {
@@ -18,6 +18,8 @@ export const WalletConnect: React.FC = () => {
     setIsLoadingBlends,
     setUserProgress,
   } = useAppStore();
+
+  const [showWalletOptions, setShowWalletOptions] = useState(false);
 
   // Try auto-login on mount
   useEffect(() => {
@@ -69,9 +71,17 @@ export const WalletConnect: React.FC = () => {
     }
   };
 
-  const handleLogin = async () => {
+  const handleLogin = async (walletType: 'wcw' | 'anchor') => {
     setIsConnecting(true);
-    const acc = await loginWithWax();
+    setShowWalletOptions(false);
+
+    let acc = null;
+    if (walletType === 'wcw') {
+      acc = await loginWithWCW();
+    } else {
+      acc = await loginWithAnchor();
+    }
+
     if (acc) {
       setAccount(acc);
       await loadUserData(acc.accountName);
@@ -123,9 +133,54 @@ export const WalletConnect: React.FC = () => {
     );
   }
 
+  if (showWalletOptions) {
+    return (
+      <div className="flex flex-col gap-3">
+        <button
+          onClick={() => handleLogin('wcw')}
+          className="
+            px-8 py-4 bg-vintage-gold text-vintage-darkBrown
+            font-vintage text-xl font-bold
+            border-4 border-vintage-sepia
+            hover:bg-vintage-cream transition-all
+            shadow-2xl transform hover:scale-105
+            relative overflow-hidden
+          "
+        >
+          <span className="relative z-10">WAX Cloud Wallet</span>
+        </button>
+
+        <button
+          onClick={() => handleLogin('anchor')}
+          className="
+            px-8 py-4 bg-vintage-gold text-vintage-darkBrown
+            font-vintage text-xl font-bold
+            border-4 border-vintage-sepia
+            hover:bg-vintage-cream transition-all
+            shadow-2xl transform hover:scale-105
+            relative overflow-hidden
+          "
+        >
+          <span className="relative z-10">Anchor Wallet</span>
+        </button>
+
+        <button
+          onClick={() => setShowWalletOptions(false)}
+          className="
+            px-4 py-2 text-vintage-cream
+            font-vintage text-sm
+            hover:text-vintage-gold transition-all
+          "
+        >
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
   return (
     <button
-      onClick={handleLogin}
+      onClick={() => setShowWalletOptions(true)}
       className="
         px-8 py-4 bg-vintage-gold text-vintage-darkBrown
         font-vintage text-xl font-bold
@@ -138,7 +193,7 @@ export const WalletConnect: React.FC = () => {
         textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
       }}
     >
-      <span className="relative z-10">Connect WAX Wallet</span>
+      <span className="relative z-10">Connect Wallet</span>
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 hover:opacity-20 animate-pulse" />
     </button>
   );
